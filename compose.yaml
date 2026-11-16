@@ -1,0 +1,30 @@
+
+services:
+  rabbitmq:
+    image: rabbitmq:4.2-management
+    container_name: alerts-rabbitmq
+    restart: unless-stopped
+
+    ports:
+      - "127.0.0.1:5672:5672"
+      - "127.0.0.1:15672:15672"
+
+    environment:
+      RABBITMQ_DEFAULT_USER: alerts
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Configurar RABBITMQ_PASSWORD en .env}
+
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+    mem_limit: 512m
+
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  rabbitmq_data:
+
