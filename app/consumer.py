@@ -1,10 +1,11 @@
 
 import asyncio
-import json
 import logging
 import os
 
 import aio_pika
+
+from app.schemas import CheckDownEvent
 
 logger = logging.getLogger(__name__)
 
@@ -13,11 +14,13 @@ QUEUE_NAME = "healthchecks.alerts"
 
 async def process_message(message: aio_pika.IncomingMessage):
     async with message.process(requeue=True):
-        event = json.loads(message.body.decode())
+        event = CheckDownEvent.model_validate_json(message.body)
 
         logger.info(
-            "Evento recibido: %s",
-            event
+            "Alerta recibida: check_id=%s, nombre=%s, estado=%s",
+            event.payload.check_id,
+            event.payload.check_name,
+            event.payload.new_status,
         )
 
 
@@ -43,7 +46,7 @@ async def consume_alerts():
 
         logger.info(
             "Esperando eventos en %s",
-            QUEUE_NAME
+            QUEUE_NAME,
         )
 
         await queue.consume(process_message)
@@ -54,3 +57,4 @@ async def consume_alerts():
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     asyncio.run(consume_alerts())
+
